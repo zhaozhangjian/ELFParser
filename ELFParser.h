@@ -51,13 +51,13 @@ public:
     ELFParser(const char* fname);
     ~ELFParser();
     bool PullStrtabSymtab();
-    bool AddShStringTable();
     bool ExtactKernels();
     const KernelMap&  GetKernelMap();
 
 private:
     bool MemoryMapFile();
     bool MemoryUnmapFile();
+    bool AddShStringTable();
     StringTable* GetShStringTable();
     StringTable* GetStringTable();
     SymbolTable* GetSymbolTable();

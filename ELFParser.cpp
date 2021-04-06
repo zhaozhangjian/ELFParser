@@ -173,7 +173,10 @@ bool ELFParser::PullStrtabSymtab() {
         }
     }
 
+    if (!strtab_) return elfError(".strtab not found!");
     if (!strtab_->PullData()) return elfError(".strtab PullData failed!");
+
+    if (!symtab_) return elfError(".symtab not found!");
     if (!symtab_->PullData()) return elfError(".symtab PullData failed!");
 
     return true;
@@ -181,6 +184,8 @@ bool ELFParser::PullStrtabSymtab() {
 
 bool ELFParser::ExtactKernels() {
     SymbolTable* symtab = GetSymbolTable();
+
+    if (!symtab) return elfError("ELFParser::symtab_ is not ready!");
 
     for (size_t i = 0; i < symtab->size_ / sizeof(GElf_Sym); ++i) {
         const GElf_Sym* sym = reinterpret_cast<const GElf_Sym*>(symtab->data_ + i * sizeof(GElf_Sym));
