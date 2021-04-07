@@ -3,26 +3,26 @@
 
 struct KernParam {
   typedef enum {
-    Value = 0,
-    HiddenNone = 1,
-    HiddenGlobalOffsetX = 2,
-    HiddenGlobalOffsetY = 3,
-    HiddenGlobalOffsetZ = 4,
-    HiddenPrintfBuffer = 5,
-    HiddenDefaultQueue = 6,
+    Value                  = 0,
+    HiddenNone             = 1,
+    HiddenGlobalOffsetX    = 2,
+    HiddenGlobalOffsetY    = 3,
+    HiddenGlobalOffsetZ    = 4,
+    HiddenPrintfBuffer     = 5,
+    HiddenDefaultQueue     = 6,
     HiddenCompletionAction = 7,
-    MemoryObject = 8,
-    ReferenceObject = 9,
-    ValueObject = 10,
-    ImageObject = 11,
-    SamplerObject = 12,
-    QueueObject = 13,
-    HiddenMultiGridSync = 14,
-    HiddenHostcallBuffer = 15,
+    MemoryObject           = 8,
+    ReferenceObject        = 9,
+    ValueObject            = 10,
+    ImageObject            = 11,
+    SamplerObject          = 12,
+    QueueObject            = 13,
+    HiddenMultiGridSync    = 14,
+    HiddenHostcallBuffer   = 15,
   } value_type_t;
 
   size_t     _offset;
-  size_t       _size; 
+  size_t       _size;
   value_type_t _type;
 };
 
