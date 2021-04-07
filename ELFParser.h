@@ -1,21 +1,12 @@
+#include "types.h"
+
 #include <string>
 #include <vector>
-#include <map>
 #include <gelf.h>
 #include <libelf.h>
 #include <stdint.h>
 
-struct KernInfo {
-    unsigned int _desc;
-    unsigned int _desz;
-    unsigned int _mach;
-    unsigned int _masz;
-};
-
-typedef std::map<std::string, KernInfo> KernelMap;
-
 class ELFParser;
-
 class Section {
 public:
     Section(ELFParser* e);
@@ -28,6 +19,8 @@ protected:
     const char* data_;
     size_t      size_;
     size_t    scnidx_;
+
+    friend class ELFParser;
 };
 
 class StringTable : public Section {
@@ -52,12 +45,13 @@ public:
     ~ELFParser();
     bool PullStrtabSymtab();
     bool ExtactKernels();
-    const KernelMap&  GetKernelMap();
+    const std::map<std::string, KernInfo>&  GetKernelMap();
 
 private:
     bool MemoryMapFile();
     bool MemoryUnmapFile();
     bool AddShStringTable();
+    bool PullKernelMetadata();
     StringTable* GetShStringTable();
     StringTable* GetStringTable();
     SymbolTable* GetSymbolTable();
@@ -73,7 +67,8 @@ private:
     Section*  shstrtab_;
     Section*    strtab_;
     Section*    symtab_;
-    KernelMap  kernels_;
+    Section*      note_;
+    std::map<std::string, KernInfo>  kernels_;
 
     friend class Section;
     friend class StringTable;

@@ -76,6 +76,7 @@ ELFParser::~ELFParser() {
     if (shstrtab_) delete shstrtab_;
     if (strtab_)   delete strtab_;
     if (symtab_)   delete symtab_;
+    if (note_)     delete note_;
 }
 
 bool ELFParser::elfError(const char* msg) {
@@ -148,14 +149,13 @@ bool ELFParser::PullStrtabSymtab() {
     if(!AddShStringTable()) return elfError("add .shstrtab failed!");
 
     Elf_Scn* scn;
+    Section* section;
     GElf_Shdr shdr;
     for (size_t i = 0; i < ehdr_.e_shnum; ++i) {
         scn = elf_getscn(elf_, i);
         if (gelf_getshdr(scn, &shdr) == nullptr) return elfError("gelf_getshdr failed!");
 
-        if (shdr.sh_type != SHT_STRTAB && shdr.sh_type != SHT_SYMTAB) continue;
-
-        Section* section = nullptr;
+        section = nullptr;
         if (shdr.sh_type == SHT_STRTAB) {
             section = new StringTable(this);
             if (!section->pull(i)) return elfError("section pull failed!");
@@ -170,6 +170,10 @@ bool ELFParser::PullStrtabSymtab() {
             section = new SymbolTable(this);
             if (!section->pull(i)) return elfError("section pull failed!");
             symtab_ = section;
+        } else if (shdr.sh_type == SHT_NOTE) {
+            section = new Section(this);
+            if (!section->pull(i)) return elfError("section pull failed!");
+            note_ = section;
         }
     }
 
@@ -179,6 +183,80 @@ bool ELFParser::PullStrtabSymtab() {
     if (!symtab_) return elfError(".symtab not found!");
     if (!symtab_->PullData()) return elfError(".symtab PullData failed!");
 
+    return true;
+}
+
+bool ELFParser::PullKernelMetadata() {
+    if (!note_) return elfError(".note not found!");
+    if (kernels_.empty()) return elfError("no need to pull metadata as no kernel symbol found!");
+
+    std::map<std::string, KernMeta>* KernMetaMap = new std::map<std::string, KernMeta>;
+    std::string metadata = std::string(note_->data_, note_->size_);
+
+    size_t beg = metadata.find("AMDGPU");
+    if (beg == std::string::npos) return elfError("AMDGPU not found in kernel metadata!");
+
+    static constexpr size_t    symbol_sz =  7; // ".symbol"
+    static constexpr size_t    offset_sz =  7; // ".offset"
+    static constexpr size_t      size_sz =  5; // ".size"
+    static constexpr size_t valuekind_sz = 11; // ".value_kind"
+    static constexpr size_t group_seg_sz = 25; // ".group_segment_fixed_size"
+    static constexpr size_t  kern_arg_sz = 21; // ".kernarg_segment_size"
+    static constexpr size_t      vgpr_sz = 11; // ".vgpr_count"
+
+    size_t anchor = metadata.find("amdhsa.version");
+    if (anchor == std::string::npos) return elfError("amdhsa.version not found!");
+
+    do {
+        KernMeta kernMeta;
+        KernParam param;
+        size_t end, finish;
+
+        beg = metadata.find(".args", beg + 1);
+        if (beg == std::string::npos || beg > anchor) break;
+
+        finish = metadata.find(".wavefront_size", beg);
+
+        do {
+            // .offset | .size | .value_kind
+            size_t b = metadata.find(".offset", beg);
+            if (b == std::string::npos || b > finish) break;
+
+            beg = b + offset_sz;
+            param._offset = metadata[beg];
+
+            beg = metadata.find(".size", beg) + size_sz;
+            param._size = metadata[beg];
+
+            beg = metadata.find(".value_kind", beg) + valuekind_sz + 1;
+            end = metadata.find(".", beg) - 2;
+            std::string vkind = metadata.substr(beg, end - beg);
+            auto it = ArgValueKindV3.find(vkind);
+            if (it == ArgValueKindV3.end()) return elfError("unsuppored value kind!");
+            param._type = it->second;
+            kernMeta._params.push_back(std::move(param));
+        } while (true);
+
+        beg = metadata.find(".kernarg_segment_size", beg) + kern_arg_sz;
+        kernMeta._kasz = metadata[beg];
+
+        beg = metadata.find(".symbol", beg) + symbol_sz + 1;
+        end = metadata.find(".kd", beg);
+        std::string name = metadata.substr(beg, end - beg);
+
+        beg = metadata.find(".vgpr_count", beg) + vgpr_sz;
+        kernMeta._vgpr = metadata[beg];
+
+        (*KernMetaMap)[name] = std::move(kernMeta);
+    } while (true);
+
+    if (KernMetaMap->size() != kernels_.size()) return elfError("mismatch of symbol count and metadata count!");
+
+    for (auto it = KernMetaMap->begin(); it != KernMetaMap->end(); ++it) {
+        kernels_[it->first]._meta = std::move(it->second);
+    }
+
+    delete KernMetaMap;
     return true;
 }
 
@@ -209,10 +287,12 @@ bool ELFParser::ExtactKernels() {
         }
     }
 
+    PullKernelMetadata();
+
     return true;
 }
 
-const KernelMap& ELFParser::GetKernelMap() { return kernels_; }
+const std::map<std::string, KernInfo>& ELFParser::GetKernelMap() { return kernels_; }
 
 StringTable* ELFParser::GetShStringTable() { return dynamic_cast<StringTable*>(shstrtab_); }
 StringTable* ELFParser::GetStringTable() { return dynamic_cast<StringTable*>(strtab_); }
