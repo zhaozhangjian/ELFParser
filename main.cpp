@@ -17,10 +17,13 @@ bool ELF_parser(const char* fname, std::map<std::string, KernInfo>& kernels) {
     return true;
 }
 
-int main() {
-    const char fname[] = "./samples/_code_object0000.o";
+int main(int argc, char* argv[]) {
+    if (argc < 2) exit(-1);
+
+    std::string fname(argv[1]);
     std::map<std::string, KernInfo> kernels;
-    if (!ELF_parser(fname, kernels)) {
+
+    if (!ELF_parser(fname.c_str(), kernels)) {
         std::cout << "Error: parse ELF failed!" << std::endl;
     } else {
         for (auto it = kernels.begin(); it != kernels.end(); ++it) {

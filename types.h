@@ -55,6 +55,6 @@ const std::map<std::string, KernParam::value_type_t> ArgValueKindV3 = {
   {"hidden_printf_buffer",      KernParam::HiddenPrintfBuffer},
   {"hidden_default_queue",      KernParam::HiddenDefaultQueue},
   {"hidden_completion_action",  KernParam::HiddenCompletionAction},
-  {"hidden_multigrid_sync_ar", KernParam::HiddenMultiGridSync}, // little hack here, should be "hidden_multigrid_sync_arg"
+  {"hidden_multigrid_sync_arg", KernParam::HiddenMultiGridSync},
   {"hidden_hostcall_buffer",    KernParam::HiddenHostcallBuffer}
 };
