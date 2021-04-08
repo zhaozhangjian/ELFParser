@@ -212,8 +212,8 @@ bool ELFParser::PullStrtabSymtab() {
 }
 
 bool ELFParser::PullKernelMetadata() {
+    if (kernels_.empty()) return true;
     if (!note_) return elfError(".note not found!");
-    if (kernels_.empty()) return elfError("no need to pull metadata as no kernel symbol found!");
 
     std::map<std::string, KernMeta>* KernMetaMap = new std::map<std::string, KernMeta>;
     std::string metadata = std::string(note_->data_, note_->size_);
