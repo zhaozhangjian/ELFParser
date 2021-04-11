@@ -18,7 +18,10 @@ bool ELF_parser(const char* fname, std::map<std::string, KernInfo>& kernels) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) exit(-1);
+    if (argc < 2) {
+        std::cout << "Error: an ELF file should be specified!" << std::endl;
+        exit(-1);
+    }
 
     std::string fname(argv[1]);
     std::map<std::string, KernInfo> kernels;

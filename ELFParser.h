@@ -52,12 +52,12 @@ private:
     bool MemoryUnmapFile();
     bool AddShStringTable();
     bool PullKernelMetadata();
-    StringTable* GetShStringTable();
-    StringTable* GetStringTable();
-    SymbolTable* GetSymbolTable();
     bool elfError(const char* msg0, const char* msg1 = nullptr);
     int digital_alphabet_backward(const char* str, int beg);
     int digital_alphabet_forward(const char* str, int beg, int end);
+    StringTable* GetShStringTable();
+    StringTable* GetStringTable();
+    SymbolTable* GetSymbolTable();
 
 private:
     const char*  fname_;

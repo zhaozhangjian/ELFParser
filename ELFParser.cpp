@@ -19,31 +19,6 @@ static bool suffix_find_cast(std::string &str, const std::string &suf) {
     return ret;
 }
 
-int ELFParser::digital_alphabet_backward(const char* str, int beg) {
-    int b = beg;
-    do {
-        const char c = str[b];
-        if ((c >= 48 && c <= 57) || // 0-9
-            (c >= 65 && c <= 90) || // A-Z
-            (c >= 97 && c <= 122))  // a-z
-            return b;
-    } while (--b >= 0);
-    return beg;
-}
-
-int ELFParser::digital_alphabet_forward(const char* str, int beg, int end) {
-    int b = beg;
-    do {
-        const char c = str[b];
-        if ((c == 95) ||            // '_'
-            (c >= 48 && c <= 57) || // 0-9
-            (c >= 65 && c <= 90) || // A-Z
-            (c >= 97 && c <= 122))  // a-z
-            return b;
-    } while (++b < end);
-    return beg;
-}
-
 // == begin Section ==
 Section::Section(ELFParser* e)
     : ep_(e), data_(nullptr), size_(0), scnidx_(0) {}
@@ -109,16 +84,37 @@ bool ELFParser::elfError(const char* msg0, const char* msg1) {
     return false;
 }
 
+int ELFParser::digital_alphabet_backward(const char* str, int beg) {
+    int b = beg;
+    do {
+        const char c = str[b];
+        if ((c >= 48 && c <= 57) || // 0-9
+            (c >= 65 && c <= 90) || // A-Z
+            (c >= 97 && c <= 122))  // a-z
+            return b;
+    } while (--b >= 0);
+    return beg;
+}
+
+int ELFParser::digital_alphabet_forward(const char* str, int beg, int end) {
+    int b = beg;
+    do {
+        const char c = str[b];
+        if ((c == 95) ||            // '_'
+            (c >= 48 && c <= 57) || // 0-9
+            (c >= 65 && c <= 90) || // A-Z
+            (c >= 97 && c <= 122))  // a-z
+            return b;
+    } while (++b < end);
+    return beg;
+}
+
 bool ELFParser::MemoryMapFile() {
-    if (fname_ == nullptr) {
-        return false;
-    }
+    if (fname_ == nullptr) return elfError("empty elf file name!");
 
     struct stat st;
     fd_ = open(fname_, O_RDONLY);
-    if (fd_ < 0) {
-        return elfError("open elf file failed!");
-    }
+    if (fd_ < 0) return elfError("open elf file failed!");
 
     if (fstat(fd_, &st) != 0) {
         close(fd_);
@@ -161,9 +157,7 @@ bool ELFParser::AddShStringTable() {
 }
 
 bool ELFParser::PullStrtabSymtab() {
-    if (!MemoryMapFile()) {
-        return false;
-    }
+    if (!MemoryMapFile()) return elfError("map elf file failed!");
 
     if ((elf_ = elf_memory(const_cast<char*>(buffer_), bfsize_)) == nullptr) {
         return elfError("elf_memory failed!");
