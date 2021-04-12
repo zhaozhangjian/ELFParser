@@ -10,6 +10,7 @@ class ELFParser;
 class Section {
 public:
     Section(ELFParser* e);
+    virtual ~Section();
     bool pull(size_t idx);
     std::string Name() const;
     virtual bool PullData() { return true; };
@@ -26,12 +27,14 @@ protected:
 class StringTable : public Section {
 public:
     StringTable(ELFParser* e);
+    ~StringTable();
     const char* GetString(size_t idx);
 };
 
 class SymbolTable : public Section {
 public:
     SymbolTable(ELFParser* e);
+    ~SymbolTable();
     bool PullData() override;
 private:
     StringTable* strtab_;

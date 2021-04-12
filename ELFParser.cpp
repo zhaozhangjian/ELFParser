@@ -23,6 +23,8 @@ static bool suffix_find_cast(std::string &str, const std::string &suf) {
 Section::Section(ELFParser* e)
     : ep_(e), data_(nullptr), size_(0), scnidx_(0) {}
 
+Section::~Section() {}
+
 bool Section::pull(size_t idx) {
     scnidx_ = idx;
 
@@ -48,6 +50,8 @@ std::string Section::Name() const {
 StringTable::StringTable(ELFParser* e)
     : Section(e) {}
 
+StringTable::~StringTable() {}
+
 const char* StringTable::GetString(size_t idx) {
     return idx < size_ ? (data_ + idx) : nullptr;
 }
@@ -56,6 +60,8 @@ const char* StringTable::GetString(size_t idx) {
 // == begin SymbolTable ==
 SymbolTable::SymbolTable(ELFParser* e)
     : Section(e), strtab_(nullptr) {}
+
+SymbolTable::~SymbolTable() {}
 
 bool SymbolTable::PullData() {
     strtab_ = ep_->GetStringTable();
