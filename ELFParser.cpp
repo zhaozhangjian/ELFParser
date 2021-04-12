@@ -225,6 +225,7 @@ bool ELFParser::PullKernelMetadata() {
     static constexpr size_t      size_sz =  5; // ".size"
     static constexpr size_t valuekind_sz = 11; // ".value_kind"
     static constexpr size_t group_seg_sz = 25; // ".group_segment_fixed_size"
+    static constexpr size_t arg_align_sz = 22; // ".kernarg_segment_align"
     static constexpr size_t  kern_arg_sz = 21; // ".kernarg_segment_size"
     static constexpr size_t      vgpr_sz = 11; // ".vgpr_count"
 
@@ -268,7 +269,11 @@ bool ELFParser::PullKernelMetadata() {
         end = metadata.find(".kernarg_segment_align", beg);
         kernMeta._ldsz = find_number(metadata.c_str(), beg, end - 1);
 
-        beg = metadata.find(".kernarg_segment_size", beg) + kern_arg_sz;
+        beg = end + arg_align_sz;
+        end = metadata.find(".kernarg_segment_size", beg);
+        kernMeta._kaal = find_number(metadata.c_str(), beg, end - 1);
+
+        beg = end + kern_arg_sz;
         end = metadata.find(".language", beg);
         kernMeta._kasz = find_number(metadata.c_str(), beg, end - 1);
 

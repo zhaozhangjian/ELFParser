@@ -27,6 +27,7 @@ struct KernParam {
 };
 
 struct KernMeta {
+    unsigned int _kaal;
     unsigned int _kasz;
     unsigned int _ldsz;
     unsigned int _vgpr;

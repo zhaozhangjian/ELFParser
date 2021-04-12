@@ -35,6 +35,7 @@ int main(int argc, char* argv[]) {
                     << "\nDeSz:" << it->second._desz
                     << "\nMach:" << it->second._mach
                     << "\nMaSz:" << it->second._masz
+                    << "\nKaAl:" << it->second._meta._kaal
                     << "\nKaSz:" << it->second._meta._kasz
                     << "\nLdSz:" << it->second._meta._ldsz
                     << "\nVgpr:" << it->second._meta._vgpr;
