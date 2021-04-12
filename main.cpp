@@ -36,13 +36,14 @@ int main(int argc, char* argv[]) {
                     << "\nMach:" << it->second._mach
                     << "\nMaSz:" << it->second._masz
                     << "\nKaSz:" << it->second._meta._kasz
+                    << "\nLdSz:" << it->second._meta._ldsz
                     << "\nVgpr:" << it->second._meta._vgpr;
 
             size_t i = 0;
             for (auto it1 = it->second._meta._params.begin(); it1 != it->second._meta._params.end(); ++it1) {
                 std::cout << "\nArg" << i << " offset: " << it1->_offset
-                                        << " size: " << it1->_size
-                                        << " type: " << it1->_type;
+                                          << " size: " << it1->_size
+                                          << " type: " << it1->_type;
                 ++i;
             }
             std::cout << std::endl;

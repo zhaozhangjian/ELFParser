@@ -53,8 +53,8 @@ private:
     bool AddShStringTable();
     bool PullKernelMetadata();
     bool elfError(const char* msg0, const char* msg1 = nullptr);
-    int digital_alphabet_backward(const char* str, int beg);
-    int digital_alphabet_forward(const char* str, int beg, int end);
+    size_t find_number(const char* str, int beg, int end);
+    std::string find_string(const char* str, int beg, int end);
     StringTable* GetShStringTable();
     StringTable* GetStringTable();
     SymbolTable* GetSymbolTable();

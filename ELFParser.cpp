@@ -84,29 +84,29 @@ bool ELFParser::elfError(const char* msg0, const char* msg1) {
     return false;
 }
 
-int ELFParser::digital_alphabet_backward(const char* str, int beg) {
-    int b = beg;
-    do {
-        const char c = str[b];
-        if ((c >= 48 && c <= 57) || // 0-9
-            (c >= 65 && c <= 90) || // A-Z
-            (c >= 97 && c <= 122))  // a-z
-            return b;
-    } while (--b >= 0);
-    return beg;
+size_t ELFParser::find_number(const char* str, int beg, int end) {
+    size_t ret = 0;
+    beg += str[beg] & 0x80 ? 1 : 0;
+
+    for (int i = 0; i < end - beg && i < sizeof(ret); ++i) {
+        (reinterpret_cast<char*>(&ret))[i] = str[end - 1 - i];
+    }
+
+    return ret;
 }
 
-int ELFParser::digital_alphabet_forward(const char* str, int beg, int end) {
-    int b = beg;
-    do {
-        const char c = str[b];
-        if ((c == 95) ||            // '_'
-            (c >= 48 && c <= 57) || // 0-9
-            (c >= 65 && c <= 90) || // A-Z
-            (c >= 97 && c <= 122))  // a-z
-            return b;
-    } while (++b < end);
-    return beg;
+std::string ELFParser::find_string(const char* str, int beg, int end) {
+    int b = -1, len = 0;
+
+    while (beg < end) {
+        if ((str[beg] & 0x80) == 0) {
+            if (b == -1) b = beg;
+            len++;
+        }
+        beg++;
+    }
+
+    return std::string(str + b, len);
 }
 
 bool ELFParser::MemoryMapFile() {
@@ -242,33 +242,38 @@ bool ELFParser::PullKernelMetadata() {
             if (b == std::string::npos || b > finish) break;
 
             beg = b + offset_sz;
-            beg = metadata.find(".size", beg);
+            end = metadata.find(".size", beg);
+            param._offset = find_number(metadata.c_str(), beg, end - 1);
 
-            param._offset = static_cast<unsigned char>(metadata[beg - 2]);
-            beg += size_sz;
-            param._size = static_cast<unsigned char >(metadata[beg]);
+            beg = end + size_sz;
+            end = metadata.find(".value_kind", beg);
+            param._size = find_number(metadata.c_str(), beg, end -1);
 
-            beg = metadata.find(".value_kind", beg) + valuekind_sz + 1;
+            beg = end + valuekind_sz + 1;
             end = metadata.find(".", beg);
-            end = digital_alphabet_backward(metadata.c_str(), end);
-            std::string vkind = metadata.substr(beg, end - beg + 1);
+            std::string vkind = find_string(metadata.c_str(), beg, end);
             auto it = ArgValueKindV3.find(vkind);
             if (it == ArgValueKindV3.end()) return elfError("unsuppored value kind of", vkind.c_str());
             param._type = it->second;
+
             kernMeta._params.push_back(std::move(param));
         } while (true);
 
-        beg = metadata.find(".kernarg_segment_size", beg) + kern_arg_sz;
-        beg = metadata.find(".language", beg);
-        kernMeta._kasz = static_cast<unsigned char >(metadata[beg - 2]);
+        beg = metadata.find(".group_segment_fixed_size", beg) + group_seg_sz;
+        end = metadata.find(".kernarg_segment_align", beg);
+        kernMeta._ldsz = find_number(metadata.c_str(), beg, end - 1);
 
-        beg = metadata.find(".symbol", beg) + symbol_sz + 1;
+        beg = metadata.find(".kernarg_segment_size", beg) + kern_arg_sz;
+        end = metadata.find(".language", beg);
+        kernMeta._kasz = find_number(metadata.c_str(), beg, end - 1);
+
+        beg = metadata.find(".symbol", beg) + symbol_sz;
         end = metadata.find(".kd", beg);
-        beg = digital_alphabet_forward(metadata.c_str(), beg, end);
-        std::string name = metadata.substr(beg, end - beg);
+        std::string name = find_string(metadata.c_str(), beg, end);
 
         beg = metadata.find(".vgpr_count", beg) + vgpr_sz;
-        kernMeta._vgpr = static_cast<unsigned char >(metadata[beg]);
+        end = metadata.find(".vgpr_spill_count", beg);
+        kernMeta._vgpr = find_number(metadata.c_str(), beg, end -1);
 
         (*KernMetaMap)[name] = std::move(kernMeta);
     } while (true);
