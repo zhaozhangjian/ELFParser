@@ -69,9 +69,8 @@ ELFParser::ELFParser(const char* fname)
       elf_(nullptr), shstrtab_(nullptr), strtab_(nullptr), symtab_(nullptr) {}
 
 ELFParser::~ELFParser() {
-    MemoryUnmapFile();
-
     elf_end(elf_);
+    MemoryUnmapFile();
 
     if (shstrtab_) delete shstrtab_;
     if (strtab_)   delete strtab_;
