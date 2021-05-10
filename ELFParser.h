@@ -63,16 +63,17 @@ private:
     SymbolTable* GetSymbolTable();
 
 private:
-    const char*  fname_;
-    const char* buffer_;
-    int             fd_;
-    int         bfsize_;
-    GElf_Ehdr     ehdr_;
-    Elf*           elf_;
-    Section*  shstrtab_;
-    Section*    strtab_;
-    Section*    symtab_;
-    Section*      note_;
+    const char*         fname_;
+    const char*        buffer_;
+    uint64_t    bundle_offset_;
+    int                    fd_;
+    int                bfsize_;
+    GElf_Ehdr            ehdr_;
+    Elf*                  elf_;
+    Section*         shstrtab_;
+    Section*           strtab_;
+    Section*           symtab_;
+    Section*             note_;
     std::map<std::string, KernInfo>  kernels_;
 
     friend class Section;

@@ -31,6 +31,7 @@ int main(int argc, char* argv[]) {
     } else {
         for (auto it = kernels.begin(); it != kernels.end(); ++it) {
             std::cout << "Name:" << it->first
+                    << "\nBundle offset:" << it->second._bundle_offset
                     << "\nDesc:" << it->second._desc
                     << "\nDeSz:" << it->second._desz
                     << "\nMach:" << it->second._mach

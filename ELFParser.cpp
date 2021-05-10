@@ -8,6 +8,7 @@
 #include <dlfcn.h>
 #include <sys/mman.h>
 #include <iostream>
+#include <string>
 
 static bool suffix_find_cast(std::string &str, const std::string &suf) {
     bool ret = false;
@@ -71,7 +72,7 @@ bool SymbolTable::PullData() {
 
 // == begin ELFParser ==
 ELFParser::ELFParser(const char* fname)
-    : fname_(fname), buffer_(nullptr), fd_(0), bfsize_(0),
+    : fname_(fname), buffer_(nullptr), bundle_offset_(0), fd_(0), bfsize_(0),
       elf_(nullptr), shstrtab_(nullptr), strtab_(nullptr), symtab_(nullptr) {}
 
 ELFParser::~ELFParser() {
@@ -161,10 +162,35 @@ bool ELFParser::AddShStringTable() {
     return true;
 }
 
+uint64_t getElfOffsetFromFatBinary(const char* data) {
+    std::string magic(data, sizeof(CLANG_OFFLOAD_BUNDLER_MAGIC_STR) - 1);
+    if (magic.compare(CLANG_OFFLOAD_BUNDLER_MAGIC_STR)) {
+        return 0;
+    }
+
+    const auto obheader = reinterpret_cast<const __ClangOffloadBundleHeader*>(data);
+    const auto* desc = &obheader->desc[0];
+    for (uint64_t i = 0; i < obheader->numBundles; ++i,
+        desc = reinterpret_cast<const __ClangOffloadBundleDesc*>(
+            reinterpret_cast<uintptr_t>(&desc->triple[0]) + desc->tripleSize)) {
+
+        std::string triple(desc->triple, desc->tripleSize);
+        if (0 == triple.compare(0, sizeof(HIP_AMDGCN_AMDHSA_TRIPLE) - 1, HIP_AMDGCN_AMDHSA_TRIPLE)
+            || 0 == triple.compare(0, sizeof(HCC_AMDGCN_AMDHSA_TRIPLE) - 1, HCC_AMDGCN_AMDHSA_TRIPLE)) {
+            return desc->offset;
+        } else {
+            continue;
+        }
+    }
+    return 0;
+}
+
 bool ELFParser::PullStrtabSymtab() {
     if (!MemoryMapFile()) return elfError("map elf file failed!");
 
-    if ((elf_ = elf_memory(const_cast<char*>(buffer_), bfsize_)) == nullptr) {
+    bundle_offset_ = getElfOffsetFromFatBinary(buffer_);
+
+    if ((elf_ = elf_memory(const_cast<char *>(buffer_ + bundle_offset_), bfsize_)) == nullptr) {
         return elfError("elf_memory failed!");
     }
 
@@ -312,6 +338,7 @@ bool ELFParser::ExtactKernels() {
                 // 8: 0000000000001000   596 FUNC    GLOBAL PROTECTED    7 _Z9vectorAddPKiS0_Pii
                 std::string name = std::string(symtab->strtab_->GetString(sym->st_name));
                 KernInfo& info = kernels_[name];
+                info._bundle_offset = static_cast<unsigned int>(bundle_offset_);
                 info._mach = sym->st_value;
                 info._masz = sym->st_size;
             } else if (GELF_ST_TYPE(sym->st_info) == STT_OBJECT) {
@@ -321,6 +348,7 @@ bool ELFParser::ExtactKernels() {
                     return elfError("data object name should end with .kd!");
                 }
                 KernInfo& info = kernels_[name];
+                info._bundle_offset = static_cast<unsigned int>(bundle_offset_);
                 info._desc = sym->st_value;
                 info._desz = sym->st_size;
             }

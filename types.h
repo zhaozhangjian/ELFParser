@@ -35,6 +35,7 @@ struct KernMeta {
 };
 
 struct KernInfo {
+    unsigned int _bundle_offset;
     unsigned int _desc;
     unsigned int _desz;
     unsigned int _mach;
@@ -59,4 +60,23 @@ const std::map<std::string, KernParam::value_type_t> ArgValueKindV3 = {
     {"hidden_completion_action",  KernParam::HiddenCompletionAction},
     {"hidden_multigrid_sync_arg", KernParam::HiddenMultiGridSync},
     {"hidden_hostcall_buffer",    KernParam::HiddenHostcallBuffer}
+};
+
+//ClangOFFLOADBundle info
+#define CLANG_OFFLOAD_BUNDLER_MAGIC_STR "__CLANG_OFFLOAD_BUNDLE__"
+#define HIP_AMDGCN_AMDHSA_TRIPLE "hip-amdgcn-amd-amdhsa"
+#define HCC_AMDGCN_AMDHSA_TRIPLE "hcc-amdgcn-amd-amdhsa-"
+
+//Clang Offload bundler description & Header
+struct __ClangOffloadBundleDesc {
+    uint64_t offset;
+    uint64_t size;
+    uint64_t tripleSize;
+    const char triple[1];
+};
+
+struct __ClangOffloadBundleHeader {
+    const char magic[sizeof(CLANG_OFFLOAD_BUNDLER_MAGIC_STR) - 1];
+    uint64_t numBundles;
+    __ClangOffloadBundleDesc desc[1];
 };
