@@ -105,7 +105,7 @@ std::string ELFParser::find_string(const char* str, int beg, int end) {
     int b = -1, len = 0;
 
     while (beg < end) {
-        if ((str[beg] & 0x80) == 0) {
+        if ((str[beg] & 0x80) == 0 && str[beg] != ' ') { // skip separator and space
             if (b == -1) b = beg;
             len++;
         }
